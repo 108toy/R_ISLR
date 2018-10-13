@@ -46,7 +46,7 @@ table(tree.pred, High.test)
 # rather than the default for the cv.tree() function, which is deviance
 
 set.seed(3)
-cv.carseats <- cv.tree(tree.carseats,FUN = prune.misclass)
+cv.carseats <- cv.tree(tree.carseats, FUN = prune.misclass)
 names(cv.carseats)
 
 # result of cv.carseats
@@ -104,8 +104,72 @@ plot(yhat ,boston.test)
 abline (0,1)
 mean((yhat -boston.test)^2)
 
-####
-
-
 ##### 8.3.3 Bagging and Random Forests #####
+library(randomForest)
+# Bagging is RF as a special case m = p
+
+# bagging
+set.seed(1)
+bag.boston = randomForest(medv~., data = Boston, subset = train, mtry = 13, importance = TRUE)
+bag.boston
+
+# Explanation on the function
+# mtry = 13: all 13 predictors should be considered for each split of the tree, so m = p, so bagging
+
+# then use the model to predict
+yhat.bag = predict (bag.boston , newdata = Boston[-train ,])
+plot(yhat.bag , boston.test)
+abline (0,1)
+mean((yhat.bag -boston.test)^2)
+
+# The test set MSE associated with the bagged regression tree is 13.16, 
+# almost half that obtained using an optimally-pruned single tree
+
+##### Bagging
+bag.boston = randomForest(medv~., data = Boston, subset = train, mtry = 13, ntree = 25)
+yhat.bag = predict(bag.boston , newdata = Boston[-train ,])
+mean((yhat.bag -boston.test)^2)
+
+##### Random Forest
+set.seed(1)
+rf.boston= randomForest(medv~., data=Boston, subset=train, mtry=6, importance =TRUE)
+yhat.rf = predict(rf.boston ,newdata=Boston[-train ,])
+mean((yhat.rf-boston.test)^2)
+
+
+importance(rf.boston)
+# higher number, more important
+
+# plot the importance:
+varImpPlot (rf.boston)
+
+##### Boosting
+library (gbm)
+set.seed(1)
+# regression problem: distribution = "gaussian"
+# classification problem:  distribution="bernoulli"
+boost.boston = gbm(medv~., data = Boston[train ,], distribution = "gaussian", n.trees = 5000, interaction.depth = 4)
+
+summary(boost.boston)
+# rel.inf => higher, more important the factor. in this case, it is again lstat and rm
+# produce partial dependence plot 
+# illustrate the marginal  effect of the selected variables on the response after INTEGRATING out the other variables
+
+par(mfrow=c(1,2))
+plot(boost.boston, i="rm")
+plot(boost.boston, i="lstat")
+
+# Boosted model to predict
+
+yhat.boost=predict(boost.boston ,newdata =Boston[-train ,], n.trees=5000)
+mean((yhat.boost - boston.test)^2)
+# MSE is similar to Random Forest and superior to Bagging
+
+# now try different shrinkage parameter λ, default is 0.001
+boost.boston = gbm(medv~., data=Boston[train ,], distribution="gaussian", n.trees =5000, interaction.depth = 4, shrinkage = 0.2, verbose=F)
+yhat.boost = predict(boost.boston ,newdata =Boston[-train ,], n.trees=5000)
+mean((yhat.boost - boston.test)^2) # MSE
+
+
+
 
