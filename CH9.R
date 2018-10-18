@@ -103,3 +103,29 @@ table(true=dat[-train ,"y"], pred=predict (tune.out$best.model ,
 
 
 #### 9.6.3 ROC Curves
+
+library(ROCR)
+rocplot =function (pred , truth , ...){
+  predob = prediction (pred , truth)
+  perf = performance(predob , "tpr", "fpr")
+  plot(perf ,...)
+  }
+
+# fitted value: > 0 one class; < 0 another class
+svmfit.opt <- svm(y~., data=dat[train ,], kernel ="radial",
+               gamma=2, cost=1, decision.values =T)
+
+fitted <- attributes(predict(svmfit.opt ,dat[train ,], decision.values=TRUE))$decision.values
+
+# ROC plot
+
+par(mfrow=c(1,3))
+rocplot (fitted ,dat[train ,"y"], main="Training Data")
+
+fitted = attributes(predict(svmfit.opt ,dat[-train ,], decision.values=T))$decision.values
+rocplot(fitted ,dat[-train ,"y"], main="Test Data")
+
+fitted = attributes (predict(svmfit.flex ,dat[- train ,], decision.values=T))$decision.values
+rocplot(fitted ,dat[-train ,"y"],add=T,col="red")
+
+# 9.6.4 SVM with Multiple Classes
